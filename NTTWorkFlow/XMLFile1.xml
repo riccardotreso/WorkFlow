@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Steps>
+  <Step ID="1" Name="SendMail" Action="NTTWorkFlow.main.sendMail()" Next="2"></Step>
+  <Step ID="2" Name="AppResp" Next="3"></Step>
+  <Step ID="3" Name="Condition" Condition="True" Eval="NTTWorkFlow.main.control()" NextTrue="4" NextFalse="5"></Step>
+  <Step ID="4" Name="AppResp" Next="3"></Step>
+  <Step ID="5" Name="AppResp" Next="3"></Step>
+</Steps>

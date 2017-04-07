@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Steps>
+  <Step ID="1" Name="SendMail" ActionType="NTTWorkFlow.main" ActionMethod="sendMail" Next="2"></Step>
+  <Step ID="2" Name="AppResp" Next="3" Prev="1"></Step>
+  <Step ID="3" Name="Condition" Condition="True" EvalType="NTTWorkFlow.Test.staticMethods" EvalMethod="condition" NextTrue="4" NextFalse="5"></Step>
+  <Step ID="4" Name="AppResp" Next="6" Prev="3"></Step>
+  <Step ID="5" Name="AppResp" Next="6" Prev="3"></Step>
+  <Step ID="6" Name="Parallel" Next="7">
+    <SubStep ID="7" Parent="6"></SubStep>
+    <SubStep ID="8" Parent="6"></SubStep>
+  </Step>
+  <Step ID="9" Name="Final" Next="-1" Prev="3"></Step>
+</Steps>
