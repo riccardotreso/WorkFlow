@@ -4,37 +4,34 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Xml.Linq;
+using NTTWorkFlow.Models;
+using NTTWorkFlow.Repository;
 
 namespace NTTWorkFlow
 {
+    //TODO: Salvataggio dati DB
+    //TODO: Caricamento Step da DB
+    //TODO: Gestione deleghe
     public class WorkFlow
     {
-        private class WFStep : Step {
-            public bool Condition { get; set; }
-            public String EvalType { get; set; }
-            public String EvalMethod { get; set; }
-            public string ActionType { get; set; }
-            public string ActionMethod { get; set; }
-            public Step NextTrue { get; set; }
-            public Step NextFalse { get; set; }
-            public int Prev { get; set; }
-            public IEnumerable<Step> SubStep { get; set; }
-        }
-
+       
         private static readonly Step _begin = Step.Begin;
         private static readonly Step _end = Step.End;
-        private IEnumerable<WFStep> _steps { get; set; }
+        private static WorkFlowDataAccess dataAccess;
+        private IEnumerable<WorkFlowStep> _steps { get; set; }
 
 
         //TODO: caricare l'xml in memoria e processarlo
         public WorkFlow(string pathConfig)
         {
-            _steps = new List<WFStep>();
+            //TODO: pass correct connection string
+            dataAccess = new WorkFlowDataAccess("Server=.;Database=MyWorkflow;Trusted_Connection=True;");
+            _steps = new List<WorkFlowStep>();
 
             XElement doc = XElement.Load(pathConfig);
-            List<WFStep> list =
+            List<WorkFlowStep> list =
                                  (from el in doc.Elements("Step")
-                                  select new WFStep()
+                                  select new WorkFlowStep()
                                   {
                                       ID = int.Parse(el.Attribute("ID").Value),
                                       Name = el.Attribute("Name").Value,
@@ -48,7 +45,7 @@ namespace NTTWorkFlow
             foreach (var el in doc.Elements("Step"))
             {
                 int id = int.Parse(el.Attribute("ID").Value);
-                WFStep current = list.Where(x => x.ID == id).First();
+                WorkFlowStep current = list.Where(x => x.ID == id).First();
                 if (el.Attribute("Condition") == null || !bool.Parse(el.Attribute("Condition").Value ?? "false"))
                 {
                     current.Next = list.Where(x => x.ID == int.Parse(el.Attribute("Next").Value)).FirstOrDefault();
@@ -71,12 +68,27 @@ namespace NTTWorkFlow
 
             _steps = list;
 
-
         }
 
-        public IEnumerable<Step> Complete(Step current, bool next = true, params object[] param) {
+        public bool Begin(String refID, String user) {
+            return dataAccess.InsertTask(_begin, refID, user);
+        }
+
+        public IEnumerable<Step> GetCurrentStep(String refID) {
+            return dataAccess.GetByRefID(refID);
+        }
+
+        public bool InsertNext(Step next, String refID, String user) {
+            return dataAccess.InsertTask(next, refID, user);
+        }
+
+
+        public IEnumerable<Step> Complete(Step current, String refID, bool next = true, params object[] param) {
             if (current == null) throw new ArgumentNullException("current");
-            WFStep sNext;
+            WorkFlowStep sNext;
+
+            if (!dataAccess.CompleteTask(current.ID, refID))
+                return null;
 
             if (next) {
                 sNext = _steps.Where(x => x.ID == current.ID).FirstOrDefault();
@@ -112,23 +124,5 @@ namespace NTTWorkFlow
 
     }
 
-    public class Step
-    {
-        internal static readonly Step Begin = new Step { ID = 1, Name = "BEGIN" };
-        internal static readonly Step End = new Step { ID = 9999, Name = "END" };
-
-        public int ID { get; set; }
-        public int Parent { get; set; }
-        public string Name { get; set; }
-        
-        public Step Next { get; set; }
-
-        public static Step Load(int pID) {
-            return new Step()
-            {
-                ID = pID
-            };
-        }
-
-    }
+    
 }
